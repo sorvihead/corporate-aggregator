@@ -33,6 +33,9 @@ def create_app(config_class=Config):
     bootstrap.init_app(app)
     migrate.init_app(app, db)
 
+    from app.auth import bp as auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+
     if not os.path.exists('logs'):
         os.mkdir('logs')
     file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
