@@ -34,4 +34,6 @@
         </p>
         <p>{{ form.submit() }}</p>
     </form>
+    <p>Уже зарегистрированы ? <a href="{{ url_for('auth.login') }}">Кликните, чтобы войти</a></p>
+    <p>Забыли пароль ? <a href="{{ url_for('auth.reset_password_request') }}">Кликните чтобы восстановить его</a></p>
 {% endblock %}
