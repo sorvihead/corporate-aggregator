@@ -20,8 +20,25 @@ from flask import render_template
 from flask_login import login_user
 from flask_login import logout_user
 from flask_login import current_user
+from flask_login import login_required
 
 from werkzeug.urls import url_parse
+
+
+@bp.before_app_request
+def before_request():
+    if current_user.is_authenticated \
+            and not current_user.confirmed \
+            and request.blueprint != 'auth' \
+            and request.endpoint != 'static':
+        return redirect(url_for('auth.unconfirmed'))
+
+
+@bp.route('/unconfirmed')
+def unconfirmed():
+    if current_user.is_anonymous or current_user.confirmed:
+        return redirect(url_for('main.index'))
+    return render_template('auth/unconfirmed.html')
 
 
 @bp.route('/login', methods=['GET', 'POST'])
@@ -53,7 +70,14 @@ def register():
         user.password = form.password.data
         db.session.add(user)
         db.session.commit()
-        flash('Вы успешно прошли регистрацию')
+        token = user.generate_confirmation_token()
+        send_email(current_user.email,
+                   'Подтверждение аккаунта',
+                   'email/confirm',
+                   user=current_user,
+                   token=token)
+        flash('Вы успешно прошли регистрацию. Осталось подтвердить ваш аккаунт. Письмо с инструкциями выслано на Ваш'
+              ' Email')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', title='Регистрация', form=form)
 
@@ -96,3 +120,29 @@ def reset_password(token):
         else:
             return redirect(url_for('main.index'))
     return render_template('auth/reset_password.html', form=form)
+
+
+@bp.route('/confirm/<token>')
+@login_required
+def confirm(token):
+    if current_user.confirmed:
+        return redirect(url_for('main.index'))
+    if current_user.confirm(token):
+        db.session.commit()
+        flash('Ваш аккаунт подтвержден! Спасибо.')
+    else:
+        flash('Ссылка на подтверждение нерабочая, или устарела')
+    return redirect(url_for('main.index'))
+
+
+@bp.route('/confirm')
+@login_required
+def resend_confirmation():
+    token = current_user.generate_confirmation_token()
+    send_email(current_user.email,
+               'Подтверждение аккаунта',
+               'email/confirm',
+               user=current_user,
+               token=token)
+    flash('Новое письмо с подтверждением аккаунта было отправлено.')
+    return redirect(url_for('main.index'))
