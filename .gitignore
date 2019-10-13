@@ -1,4 +1,4 @@
-app.db
+data-dev.sqlite
 .env
 .idea
 __pycache__
