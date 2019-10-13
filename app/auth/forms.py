@@ -8,6 +8,7 @@ from wtforms import PasswordField
 from wtforms import SubmitField
 
 from wtforms.validators import DataRequired
+from wtforms.validators import Regexp
 from wtforms.validators import ValidationError
 from wtforms.validators import Email
 from wtforms.validators import EqualTo
@@ -26,7 +27,10 @@ class RegistrationForm(FlaskForm):
                            validators=[DataRequired(message="Это поле обязательно для заполнения"),
                                        Length(min=4,
                                               max=20,
-                                              message="Логин должен быть длиною от 4 до 20 символов")])
+                                              message="Логин должен быть длиною от 4 до 20 символов"),
+                                       Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0, 'Имя пользователя может включать в себя'
+                                                                             'только латинские буквы, цифры,'
+                                                                             'точку и нижнее подчеркивание')])
     email = StringField('Email',
                         validators=[DataRequired(message="Это поле обязательно для заполнения"),
                                     Email(message="Неверный Email")])

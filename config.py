@@ -11,6 +11,7 @@ class Config(object):
     SECRET_KEY = os.getenv('SECRET_KEY', 'YOU-WILL-NEVER-GUESS')
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URI', f'sqlite:///{os.path.join(basedir, "app.db")}')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    APPLICATION_MAIL_SUBJECT_PREFIX = '[Zara]'
     MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = os.getenv('MAIL_PORT')
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS')

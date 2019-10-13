@@ -2,14 +2,14 @@ from app import db
 
 from app.models import User
 
+from app.email import send_email
+
 from app.auth import bp
 
 from app.auth.forms import LoginForm
 from app.auth.forms import RegistrationForm
 from app.auth.forms import ResetPasswordForm
 from app.auth.forms import ResetPasswordRequestForm
-
-from app.auth.email import send_password_reset_email
 
 from flask import flash
 from flask import request
@@ -72,7 +72,12 @@ def reset_password_request():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
-            send_password_reset_email(user)
+            token = user.generate_reset_token()
+            send_email(user.email,
+                       'Reset Your Password',
+                       'email/reset_password',
+                       user=user,
+                       token=token)
         flash('На ваш Email отправлены инструкции по восстановлению пароля')
         return redirect(url_for('auth.login'))
     return render_template('auth/reset_password_request.html', title='Восстановление пароля', form=form)
@@ -82,15 +87,12 @@ def reset_password_request():
 def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))  # main.index
-    user = User.verify_reset_password_token(token)
-    if not user:
-        return redirect(url_for('main.index'))  # main.index
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        user.password = form.password.data
-        db.session.commit()
-        flash('Ваш пароль был сброшен')
-        return redirect(url_for('auth.login'))
+        if User.reset_password(token, form.password.data):
+            db.session.commit()
+            flash('Ваш пароль был сброшен')
+            return redirect(url_for('auth.login'))
+        else:
+            return redirect(url_for('main.index'))
     return render_template('auth/reset_password.html', form=form)
-
-

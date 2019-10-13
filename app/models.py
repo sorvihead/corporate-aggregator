@@ -5,6 +5,8 @@ from flask import current_app
 
 from flask_login import UserMixin
 
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 
@@ -13,8 +15,6 @@ from datetime import datetime
 from hashlib import md5
 
 from time import time
-
-import jwt
 
 
 class User(UserMixin, db.Model):
@@ -26,6 +26,7 @@ class User(UserMixin, db.Model):
     about_me = db.Column(db.String(280))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    confirmed = db.Column(db.Boolean, default=False)
 
     @property
     def password(self):
@@ -42,22 +43,40 @@ class User(UserMixin, db.Model):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
 
-    def get_reset_password_token(self, expires_in=600):
-        return jwt.encode(
-            {'reset_password': self.id, 'exp': time() + expires_in},
-            current_app.config['SECRET_KEY'], algorithm='HS256',
-        ).decode('utf-8')
+    def generate_reset_token(self, expires_in=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expires_in)
+        return s.dumps({'reset': self.id}).decode('utf-8')
 
     @staticmethod
-    def verify_reset_password_token(token):
+    def reset_password(token, new_password):
+        s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            id = jwt.decode(token,
-                            current_app.config['SECRET_KEY'],
-                            algorithms=['HS256'])['reset_password']
+            data = s.loads(token.encode('UTF-8'))
         except:
-            return
-        return User.query.get(id)
+            return False
+        user = User.query.get(data.get('reset'))
+        if not user:
+            return False
+        user.password = new_password
+        db.session.add(user)
+        return True
 
+    def generate_confirmation_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'confirm': self.id}).decode('utf-8')
+
+    def confirm(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+
+        if data.get('confirm') != self.id:
+            return False
+        self.confirmed = True
+        db.session.add(self)
+        return True
 
 
 @login.user_loader
