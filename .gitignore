@@ -1,4 +1,5 @@
 data-dev.sqlite
+data-dev.sqlite-journal
 .env
 .idea
 __pycache__

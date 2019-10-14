@@ -2,9 +2,13 @@ from app import create_app
 from app import db
 
 from app.models import User
+from app.models import AnonymousUser
+from app.models import Permission
+from app.models import Role
 
 import unittest
 import time
+
 
 class UserModelTestCase(unittest.TestCase):
     def setUp(self) -> None:
@@ -12,6 +16,7 @@ class UserModelTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         db.create_all()
+        Role.insert_roles()
 
     def tearDown(self) -> None:
         db.session.remove()
@@ -80,3 +85,46 @@ class UserModelTestCase(unittest.TestCase):
         time.sleep(2)
         self.assertFalse(User.reset_password(token, 'dog'))
         self.assertTrue(u.check_password('cat'))
+
+    def test_unfollow_role(self):
+        u = User(email='ex@ex.ru', password='cat')
+        self.assertTrue(u.can(Permission.FOLLOW))
+        self.assertFalse(u.can(Permission.WRITE))
+        self.assertFalse(u.can(Permission.MODERATE))
+        self.assertFalse(u.can(Permission.ADMIN))
+        self.assertFalse(u.is_administrator())
+
+    def test_anonymous_user(self):
+        u = AnonymousUser()
+        self.assertFalse(u.can(Permission.FOLLOW))
+        self.assertFalse(u.can(Permission.WRITE))
+        self.assertFalse(u.can(Permission.MODERATE))
+        self.assertFalse(u.can(Permission.ADMIN))
+        self.assertFalse(u.is_administrator())
+
+    def test_user_role(self):
+        r = Role.query.filter_by(name='User').first()
+        u = User(email="ex@ex.ru", password="cat", role=r)
+        self.assertTrue(u.can(Permission.FOLLOW))
+        self.assertTrue(u.can(Permission.WRITE))
+        self.assertFalse(u.can(Permission.MODERATE))
+        self.assertFalse(u.can(Permission.ADMIN))
+        self.assertFalse(u.is_administrator())
+
+    def test_moder_role(self):
+        r = Role.query.filter_by(name='Moderator').first()
+        u = User(email="ex@ex.ru", password="cat", role=r)
+        self.assertTrue(u.can(Permission.FOLLOW))
+        self.assertTrue(u.can(Permission.WRITE))
+        self.assertTrue(u.can(Permission.MODERATE))
+        self.assertFalse(u.can(Permission.ADMIN))
+        self.assertFalse(u.is_administrator())
+
+    def test_admin_role(self):
+        r = Role.query.filter_by(name='Administrator').first()
+        u = User(email="ex@ex.ru", password="cat", role=r)
+        self.assertTrue(u.can(Permission.FOLLOW))
+        self.assertTrue(u.can(Permission.WRITE))
+        self.assertTrue(u.can(Permission.MODERATE))
+        self.assertTrue(u.can(Permission.ADMIN))
+        self.assertTrue((u.is_administrator()))

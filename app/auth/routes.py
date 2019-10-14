@@ -27,11 +27,12 @@ from werkzeug.urls import url_parse
 
 @bp.before_app_request
 def before_request():
-    if current_user.is_authenticated \
-            and not current_user.confirmed \
-            and request.blueprint != 'auth' \
-            and request.endpoint != 'static':
-        return redirect(url_for('auth.unconfirmed'))
+    if current_user.is_authenticated:
+        current_user.ping()
+        if not current_user.confirmed \
+                and request.blueprint != 'auth' \
+                and request.endpoint != 'static':
+            return redirect(url_for('auth.unconfirmed'))
 
 
 @bp.route('/unconfirmed')
@@ -91,7 +92,7 @@ def logout():
 @bp.route('/reset_password_request', methods=['POST', 'GET'])
 def reset_password_request():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))  # main.index
+        return redirect(url_for('main.index'))
     form = ResetPasswordRequestForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
@@ -110,7 +111,7 @@ def reset_password_request():
 @bp.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))  # main.index
+        return redirect(url_for('main.index'))
     form = ResetPasswordForm()
     if form.validate_on_submit():
         if User.reset_password(token, form.password.data):
