@@ -25,12 +25,14 @@ from flask_login import current_user
 @bp.route('/', methods=['GET'])
 @bp.route('/index', methods=['GET'])
 @login_required
+@permission_required(Permission.WRITE)
 def index():
     return render_template('index.html', title='Главная')
 
 
 @bp.route('/user/<string:username>', methods=['GET'])
 @login_required
+@permission_required(Permission.WRITE)
 def user(username):
     return ''
 

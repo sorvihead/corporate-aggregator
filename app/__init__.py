@@ -35,6 +35,9 @@ def create_app(config_name):
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
 
+    from app.unfollow import bp as unfollow_bp
+    app.register_blueprint(unfollow_bp, url_prefix='/unfollow')
+
     if not os.path.exists('logs'):
         os.mkdir('logs')
     file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)

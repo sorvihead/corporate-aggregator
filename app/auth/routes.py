@@ -66,10 +66,10 @@ def register():
         db.session.add(user)
         db.session.commit()
         token = user.generate_confirmation_token()
-        send_email(current_user.email,
+        send_email(user.email,
                    'Подтверждение аккаунта',
                    'email/confirm',
-                   user=current_user,
+                   user=user,
                    token=token)
         flash('Вы успешно прошли регистрацию. Осталось подтвердить ваш аккаунт. Письмо с инструкциями выслано на Ваш'
               ' Email')
