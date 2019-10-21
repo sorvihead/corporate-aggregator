@@ -129,13 +129,16 @@ class User(UserMixin, db.Model):
 
     def elevate(self, user, role=None):
         if self.can(Permission.MODERATE) or self.is_administrator():
-            if not role:
-                role = Role.query.filter_by(name='User').first()
-                user.role = role
-                db.session.add(user)
+            if user.role.permissions < self.role.permissions and user is not self:
+                if not role:
+                    role = Role.query.filter_by(name='User').first()
+                    user.role = role
+                    db.session.add(user)
+                else:
+                    user.role = role
+                    db.session.add(user)
             else:
-                user.role = role
-                db.session.add(user)
+                raise PermissionError
         else:
             raise PermissionError
 
