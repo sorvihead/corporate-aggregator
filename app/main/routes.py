@@ -1,6 +1,10 @@
 from app import db
 
 from app.models import User
+from app.models import Permission
+
+from app.decorators import admin_required
+from app.decorators import permission_required
 
 from app.main import bp
 
@@ -16,15 +20,6 @@ from flask import g
 
 from flask_login import login_required
 from flask_login import current_user
-
-from datetime import datetime
-
-
-@bp.before_request
-def before_request():
-    if current_user.is_authenticated:
-        current_user.last_seen = datetime.utcnow()
-        db.session.commit()
 
 
 @bp.route('/', methods=['GET'])

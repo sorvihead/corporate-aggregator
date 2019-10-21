@@ -1,13 +1,12 @@
+import time
+import unittest
+
 from app import create_app
 from app import db
-
-from app.models import User
-from app.models import AnonymousUser
+from app.models import AnonymousUser, Request, Shop, Department
 from app.models import Permission
 from app.models import Role
-
-import unittest
-import time
+from app.models import User
 
 
 class UserModelTestCase(unittest.TestCase):
@@ -128,3 +127,26 @@ class UserModelTestCase(unittest.TestCase):
         self.assertTrue(u.can(Permission.MODERATE))
         self.assertTrue(u.can(Permission.ADMIN))
         self.assertTrue((u.is_administrator()))
+
+    def test_accept_request(self):
+        a = User(name='sorvihead', password='123', role=Role.query.filter_by(name='Administrator').first())
+        m = User(name='sorvihead', password='123', role=Role.query.filter_by(name='Moderator').first())
+        user = User(name='sorvihead', password='123', role=Role.query.filter_by(name='User').first())
+        u = User(name='test', password='1')
+        db.session.add_all([a, u, m, user])
+        db.session.commit()
+        s = Shop(name='afi', shop_code='9066')
+        d = Department(name='kids')
+        r = Request(description='test', user=u, shop=s, department=d)
+        r2 = Request(description='test2', user=u, shop=s, department=d)
+        r3 = Request(description='test3', user=u, shop=s, department=d)
+        db.session.add_all([s, d, r, r2, r3])
+        db.session.commit()
+        a.accept_request(r)
+        m.accept_request(r2)
+
+        db.session.add(r)
+        db.session.commit()
+        self.assertTrue(r.approved)
+        self.assertTrue(r2.approved)
+        self.assertRaises(PermissionError, user.accept_request, r3)

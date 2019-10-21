@@ -1,9 +1,9 @@
-from app import create_app
-from app import db
+import unittest
 
 from flask import current_app
 
-import unittest
+from app import create_app
+from app import db
 
 
 class BasicsTestCase(unittest.TestCase):

@@ -1,6 +1,6 @@
-from app.models import Permission
-
 from flask import Blueprint
+
+from app.models import Permission
 
 bp = Blueprint('main', __name__)
 

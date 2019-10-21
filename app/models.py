@@ -1,21 +1,15 @@
-from app import db
-from app import login
-
-from flask import current_app
-
-from flask_login import UserMixin
-from flask_login import AnonymousUserMixin
-
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-
-from werkzeug.security import generate_password_hash
-from werkzeug.security import check_password_hash
-
 from datetime import datetime
-
 from hashlib import md5
 
-from time import time
+from flask import current_app
+from flask_login import AnonymousUserMixin
+from flask_login import UserMixin
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash
+
+from app import db
+from app import login
 
 
 class Permission:
@@ -28,14 +22,19 @@ class Permission:
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), index=True)
+    surname = db.Column(db.String(50), index=True)
     username = db.Column(db.String(20), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     hash_password = db.Column(db.String(128))
-    about_me = db.Column(db.String(280))
+    about_me = db.Column(db.Text())
+    position = db.Column(db.String(128), index=True)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     confirmed = db.Column(db.Boolean, default=False)
+    requests = db.relationship('Request', backref='user', lazy='dynamic')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    shop_id = db.Column(db.Integer, db.ForeignKey('shop.id'))
+    department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -111,6 +110,59 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def accept_request(self, request):
+        if self.can(Permission.MODERATE) or self.is_administrator():
+            request.approved = True
+            db.session.add(request)
+            return request
+        else:
+            raise PermissionError
+
+    def reject_request(self, request, message=None):
+        if self.can(Permission.MODERATE) or self.is_administrator():
+            request.approved = False
+            request.message = message
+            db.session.add(request)
+            return request
+        else:
+            raise PermissionError
+
+    def elevate(self, user, role=None):
+        if self.can(Permission.MODERATE) or self.is_administrator():
+            if not role:
+                role = Role.query.filter_by(name='User').first()
+                user.role = role
+                db.session.add(user)
+            else:
+                user.role = role
+                db.session.add(user)
+        else:
+            raise PermissionError
+
+    def add_to_shop(self, user, shop):
+        if self.can(Permission.MODERATE) or self.is_administrator():
+            shop.add_user(user)
+        else:
+            raise PermissionError
+
+    def add_to_department(self, user, department):
+        if self.can(Permission.MODERATE) or self.is_administrator():
+            department.add_user(user)
+        else:
+            raise PermissionError
+
+    def remove_from_shop(self, user, shop):
+        if self.can(Permission.MODERATE) or self.is_administrator():
+            shop.remove_user(user)
+        else:
+            raise PermissionError
+
+    def remove_from_department(self, user, department):
+        if self.can(Permission.MODERATE) or self.is_administrator():
+            department.remove_user(user)
+        else:
+            raise PermissionError
+
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):
@@ -174,6 +226,74 @@ class Role(db.Model):
         return f'<Role -> name: {self.name},' \
                f' default: {self.default},' \
                f' permissions: {self.permissions}>'
+
+
+class Shop(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, index=True)
+    shop_code = db.Column(db.String(8), unique=True, index=True)
+    users = db.relationship('User', backref='shop', lazy='dynamic')
+    departments = db.relationship('Department', backref='shop', lazy='dynamic')  # TODO
+    requests = db.relationship('Request', backref='shop', lazy='dynamic')  # TODO
+
+    def __init__(self, **kwargs):
+        super(Shop, self).__init__(**kwargs)
+        role = Role.query.filter_by(name='Administrator').first()
+        admin = User.query.filter_by(role=role).first()
+        self.users.append(admin)
+
+    def add_user(self, user):
+        if not self.has_user(user):
+            self.users.append(user)
+
+    def remove_user(self, user):
+        if self.has_user(user):
+            self.users.remove(user)
+            if user.department:
+                department = Department.query.filter(Department.users.contains(user)).first()
+                if department.has_user(user):
+                    department.remove_user(user)
+
+    def has_user(self, user):
+        return user in self.users
+
+
+class Department(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(32), index=True)
+    users = db.relationship('User', backref='department', lazy='dynamic')
+    requests = db.relationship('Request', backref='department', lazy='dynamic')
+    shop_id = db.Column(db.Integer, db.ForeignKey('shop.id'))
+
+    def __init__(self, **kwargs):
+        super(Department, self).__init__(**kwargs)
+        role = Role.query.filter_by(name='Administrator').first()
+        admin = User.query.filter_by(role=role).first()
+        self.users.append(admin)
+
+    def add_user(self, user):
+        if not self.has_user(user) and user.shop == self.shop:
+            self.users.append(user)
+
+    def remove_user(self, user):
+        if self.has_user(user) and user.shop == self.shop:
+            self.users.remove(user)
+
+    def has_user(self, user):
+        return user in self.users
+
+
+class Request(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
+    shop_id = db.Column(db.Integer, db.ForeignKey('shop.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    description = db.Column(db.Text)
+    message = db.Column(db.Text)
+    approved = db.Column(db.Boolean, index=True, default=False)
+
+    def __init__(self, **kwargs):
+        super(Request, self).__init__(**kwargs)
 
 
 @login.user_loader

@@ -1,16 +1,14 @@
-from flask import Flask
-
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_mail import Mail
-from flask_bootstrap import Bootstrap
-
-from config import config
-
-from logging.handlers import RotatingFileHandler
-
 import logging
 import os
+from logging.handlers import RotatingFileHandler
+
+from flask import Flask
+from flask_bootstrap import Bootstrap
+from flask_login import LoginManager
+from flask_mail import Mail
+from flask_sqlalchemy import SQLAlchemy
+
+from config import config
 
 db = SQLAlchemy()
 login = LoginManager()

@@ -1,28 +1,22 @@
+from flask import flash
+from flask import redirect
+from flask import render_template
+from flask import request
+from flask import url_for
+from flask_login import current_user
+from flask_login import login_required
+from flask_login import login_user
+from flask_login import logout_user
+from werkzeug.urls import url_parse
+
 from app import db
-
-from app.models import User
-
-from app.email import send_email
-
 from app.auth import bp
-
 from app.auth.forms import LoginForm
 from app.auth.forms import RegistrationForm
 from app.auth.forms import ResetPasswordForm
 from app.auth.forms import ResetPasswordRequestForm
-
-from flask import flash
-from flask import request
-from flask import redirect
-from flask import url_for
-from flask import render_template
-
-from flask_login import login_user
-from flask_login import logout_user
-from flask_login import current_user
-from flask_login import login_required
-
-from werkzeug.urls import url_parse
+from app.email import send_email
+from app.models import User
 
 
 @bp.before_app_request
