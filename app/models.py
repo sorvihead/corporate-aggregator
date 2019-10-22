@@ -261,6 +261,14 @@ class Shop(db.Model):
     def has_user(self, user):
         return user in self.users
 
+    @staticmethod
+    def create_shop(user, name, code):
+        shop = Shop(name=name, shop_code=code)
+        role = Role.query.filter_by(name='Moderator').first()
+        user.role = role
+        shop.add_user(user)
+        db.session.add_all([shop, user])
+
 
 class Department(db.Model):
     id = db.Column(db.Integer, primary_key=True)
