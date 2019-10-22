@@ -1,18 +1,12 @@
-from app.models import Department
-from app.models import Shop
-
 from flask_wtf import FlaskForm
-from wtforms import BooleanField
-from wtforms import PasswordField
 from wtforms import StringField
 from wtforms import SubmitField
 from wtforms.validators import DataRequired
-from wtforms.validators import Email
-from wtforms.validators import EqualTo
-from wtforms.validators import Length
-from wtforms.validators import Regexp
-from wtforms.validators import ValidationError
 from wtforms.validators import Optional
+from wtforms.validators import ValidationError
+
+from app.models import Department
+from app.models import Shop
 
 
 class EditForm(FlaskForm):
@@ -35,10 +29,15 @@ class ChoiceForm(FlaskForm):
         if not shop:
             raise ValidationError("Такой магазин отсутствует")  # TODO показать ближайшие к введенному значению
 
-    def validata_department(self, department_name):
+    def validate_department(self, department_name):
         department = Department.query.filter_by(name=department_name.data).first()
         if not department:
             raise ValidationError("Такой отдел отсутствует")
 
 
-
+class CreateShopForm(FlaskForm):
+    name = StringField("Название магазина",
+                       validators=[DataRequired(message="Это поле обязательно для заполнения")])
+    shop_code = StringField("Код магазина",
+                            validators=[DataRequired(message="Это поле обязательно для заполнения")])
+    submit = SubmitField("Создать")

@@ -6,12 +6,15 @@ from flask_login import current_user
 from flask_login import login_required
 
 from app import db
+from app.decorators import shop_required
 from app.models import Department
 from app.models import Permission
 from app.models import Request
+from app.models import Role
 from app.models import Shop
 from app.unfollow import bp
 from app.unfollow.forms import ChoiceForm
+from app.unfollow.forms import CreateShopForm
 from app.unfollow.forms import EditForm
 
 
@@ -73,3 +76,27 @@ def wait(shop, department):
         flash("Заявка не сформирована")
         return redirect(url_for('unfollow.first_choice'))
     return render_template('unfollow/wait.html')
+
+
+@bp.route('/create', methods=['POST', 'GET'])
+@login_required
+def create_shop():
+    if current_user.can(Permission.WRITE):
+        flash("Вы уже состоите в магазине")
+        return redirect(url_for('main.index'))
+    if not current_user.name or not current_user.surname or not current_user.position:
+        flash("Не хватает ваших данных")
+        return redirect(url_for('unfollow.first_edit_profile'))
+    form = CreateShopForm()
+    if form.validate_on_submit():
+        shop_name = form.name.data
+        shop_code = form.shop_code.data
+        shop = Shop(name=shop_name, shop_code=shop_code)
+        shop.add_user(current_user)
+        role = Role.query.filter_by(name='Moderator').first()
+        current_user.role = role
+        db.session.add_all([shop, current_user])
+        db.session.commit()
+        flash("Магазин создан")
+        return redirect(url_for('main.index'))  # TODO на страницу магазина
+    return render_template('unfollow/create.html', form=form)

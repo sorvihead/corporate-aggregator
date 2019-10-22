@@ -243,7 +243,8 @@ class Shop(db.Model):
         super(Shop, self).__init__(**kwargs)
         role = Role.query.filter_by(name='Administrator').first()
         admin = User.query.filter_by(role=role).first()
-        self.users.append(admin)
+        if admin:
+            self.users.append(admin)
 
     def add_user(self, user):
         if not self.has_user(user):
