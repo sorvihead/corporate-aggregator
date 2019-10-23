@@ -1,3 +1,4 @@
+from flask import g
 from flask_login import current_user
 from flask_login import login_required
 
@@ -10,7 +11,7 @@ from app.shop import bp
 @bp.route('/<shop_code>')
 @login_required
 @permission_required(Permission.WRITE)
-@shop_required(current_user.shop)
+@shop_required()
 def shop(shop_code):
     return ''
 
@@ -18,7 +19,7 @@ def shop(shop_code):
 @bp.route('/<shop_code>/requests')
 @login_required
 @permission_required(Permission.MODERATE)
-@shop_required(current_user.shop)
+@shop_required()
 def requests(shop_code):
     return ''
 
@@ -26,7 +27,7 @@ def requests(shop_code):
 @bp.route('/departments')
 @login_required
 @permission_required(Permission.WRITE)
-@shop_required(current_user.shop)
+@shop_required()
 def departments(shop_code):
     return ''
 
@@ -34,7 +35,7 @@ def departments(shop_code):
 @bp.route('/<shop_code>/users')
 @login_required
 @permission_required(Permission.WRITE)
-@shop_required(current_user.shop)
+@shop_required()
 def users(shop_code):
     return ''
 
@@ -42,7 +43,7 @@ def users(shop_code):
 @bp.route('/<shop_code>/timetable')
 @login_required
 @permission_required(Permission.WRITE)
-@shop_required(current_user.shop)
+@shop_required()
 def timetable(shop_code):
     return ''
 
@@ -50,6 +51,6 @@ def timetable(shop_code):
 @bp.route('/<shop_code>/furniture')
 @login_required
 @permission_required(Permission.WRITE)
-@shop_required(current_user.shop)
+@shop_required()
 def furniture(shop_code):
     return ''

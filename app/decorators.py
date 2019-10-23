@@ -29,13 +29,20 @@ def admin_required(f):
     return permission_required(Permission.ADMIN)(f)
 
 
-def shop_required(shop):
+def shop_required():
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            requested_shop = args[0] or kwargs.get('shop')
-            shop_instance = Shop.query.filter_by(name=requested_shop).first()
-            if shop is not shop_instance:
+            requested_shop = args[0] if args else kwargs.get('shop_code')
+            shop_instance = Shop.query.filter_by(shop_code=requested_shop).first()
+            current_shop = current_user.shop if current_user else None
+            if not current_shop:
+                flash('Вы не состоите в магазине')
+                return redirect(url_for('main.index'))
+            if not shop_instance:
+                flash('Такого магазина не существует')
+                return redirect(url_for('main.index'))
+            if current_shop is not shop_instance:
                 flash('Вы не состоите в данном магазине')
                 return redirect(url_for('main.index'))
             return f(*args, **kwargs)
