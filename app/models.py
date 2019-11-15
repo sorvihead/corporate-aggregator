@@ -269,6 +269,10 @@ class Shop(db.Model):
         shop.add_user(user)
         db.session.add_all([shop, user])
 
+    def __repr__(self):
+        return f'<Shop -> name: {self.name}, ' \
+               f'shop_code: {self.shop_code}>'
+
 
 class Department(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -294,6 +298,10 @@ class Department(db.Model):
     def has_user(self, user):
         return user in self.users
 
+    def __repr__(self):
+        return f'<Department -> name: {self.name}, ' \
+               f'shop: {self.shop}>'
+
 
 class Request(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -306,6 +314,11 @@ class Request(db.Model):
 
     def __init__(self, **kwargs):
         super(Request, self).__init__(**kwargs)
+
+    def __repr__(self):
+        return f'<Request -> name: {self.id}, ' \
+               f'shop: {self.shop}, ' \
+               f'user: {self.user}>'
 
 
 @login.user_loader
